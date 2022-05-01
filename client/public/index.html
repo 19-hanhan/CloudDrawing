@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="icon" href="https://weibo.com/favicon.ico">
+    <title>WeTer 分享你的新鲜事</title>
+</head>
+<body>
+<noscript>
+    <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled.
+        Please enable it to continue.</strong>
+</noscript>
+<div id="app"></div>
+</body>
+</html>
+
+<style scoped>
+    .biaoqing:focus {
+        outline: none;
+    }
+
+    .biaoqing {
+        width: 440px !important;
+        height: 180px;
+        overflow-y: scroll;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    .v-modal {
+        z-index: 100 !important;
+    }
+
+    [class='el-drawer rtl'] {
+        background-color: whitesmoke;
+    }
+
+    @media screen and (max-width: 1200px) {
+        .biaoqing {
+            width: 85% !important;
+        }
+    }
+
+     @media screen and (max-width: 1024px) {
+        [class='el-drawer rtl'] {
+            width: 55% !important;
+        }
+    }
+
+    @media screen and (max-width: 765px) {
+        [class='el-drawer rtl'] {
+            width: 80% !important;
+        }
+    }
+
+    @media screen and (max-width: 321px) {
+        [class='el-drawer rtl'] {
+            width: 90% !important;
+        }
+    }
+
+
+</style>
