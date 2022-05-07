@@ -1,33 +1,42 @@
 <template>
     <div class="middle_middle">
         <div class="jumbotron">
-            <h1>给岁月以文明</h1>
-            <p>而不是给文明以岁月</p>
+            <h1>这世界有朝夕与四季</h1>
+            <p>还有诗与远方</p>
         </div>
         <div class="weibo-content">
+            <!--  搜索框 -->
+            <div class="box">
+                <div class="searchBox">
+                    <input type="text" v-model="searchKeyword" placeholder="请输入关键词进行搜索" class="searchInput"
+                           style="padding-left: 10px;">
+                    <input type="button" @click="searchInputHandler" value="搜索" class="searchButton">
+                </div>
+            </div>
             <!-- 微博列表数据页 -->
             <div class="list-item" v-for="single_weibo in all_weibo_lis">
                 <div class="single-weibo-up">
                     <div class="avatar-name-time clearfix">
-                        <a href="#" @click="other_user_page(single_weibo.userId)">
-            <span class="single-weibo-avatar">
-              <img :src="single_weibo.avatar">
-            </span>
+                        <a href="#" @click="other_user_page(single_weibo.user.id)">
+                            <span class="single-weibo-avatar">
+                              <img :src="single_weibo.user.avatar">
+                            </span>
                             <ul class="single-weibo-writer">
-                                <li class="writer-name">{{ single_weibo.nickname }}</li>
-                                <li class="write-time">{{ single_weibo.create_time }}</li>
+                                <li class="writer-name">{{ single_weibo.user.nickname }}</li>
+                                <li class="write-time">{{ single_weibo.diary.createTime }}</li>
                             </ul>
                         </a>
-                        <el-dropdown v-if="userId && (parseInt(userId) !== parseInt(single_weibo.userId))"
+                        <el-dropdown v-if="userId && (parseInt(userId) !== parseInt(single_weibo.user.id))"
                                      trigger="click">
-            <span class="el-dropdown-link">
-              <i @click="check_follow(userId, single_weibo.userId)" class="el-icon-arrow-down el-icon--right"></i>
-            </span>
+                            <span class="el-dropdown-link">
+                              <i @click="check_follow(userId, single_weibo.user.id)"
+                                 class="el-icon-arrow-down el-icon--right"></i>
+                            </span>
                             <el-dropdown-menu slot="dropdown">
-              <span @click="change_follow(userId, single_weibo.userId)">
-                <el-dropdown-item v-if="!is_follow">加关注</el-dropdown-item>
-                <el-dropdown-item v-if="is_follow">取消关注</el-dropdown-item>
-              </span>
+                              <span @click="change_follow(userId, single_weibo.user.id)">
+                                <el-dropdown-item v-if="!is_follow">加关注</el-dropdown-item>
+                                <el-dropdown-item v-if="is_follow">取消关注</el-dropdown-item>
+                              </span>
                             </el-dropdown-menu>
                         </el-dropdown>
                     </div>
@@ -37,21 +46,21 @@
                         加载中...
                     </div>
                     <div class="weibo-media clearfix">
-                        <div class="single-weibo-media" v-for="image in single_weibo.image_lis">
-                            <el-image :src="image" :preview-src-list="single_weibo.image_lis"></el-image>
+                        <div class="single-weibo-media" v-for="image in single_weibo.imgs">
+                            <el-image :src="image" :preview-src-list="single_weibo.imgs"></el-image>
                         </div>
                     </div>
                 </div>
                 <!-- 评论和点赞 >>> -->
                 <div class="single-weibo-bottom">
                     <el-button
-                            @click="show_comment($event, single_weibo['id'],)"
+                            @click="show_comment($event, single_weibo.diary.id,)"
                             type="text"
-                            icon="el-icon-chat-dot-square">{{ single_weibo['commentNum'] }}
+                            icon="el-icon-chat-dot-square">{{ single_weibo.diary.commentNum }}
                     </el-button>
                     <span class="line">｜</span>
                     <el-button type="text" icon="glyphicon glyphicon-thumbs-up"
-                               @click="like_or_unlike($event, single_weibo['id'])">{{ single_weibo['like'] }}
+                               @click="like_or_unlike($event, single_weibo.diary.id)">{{ single_weibo.diary.likeNum }}
                     </el-button>
                 </div>
                 <!-- <<< 评论和点赞 -->
@@ -421,7 +430,7 @@
                         </div>
                         <div class="bottom_right clearfix">
                             <el-button type="warning" size="small" :disabled="!textarea"
-                                       @click="post_comment(single_weibo['id'])">评论
+                                       @click="post_comment(single_weibo.diary.id)">评论
                             </el-button>
                         </div>
                     </div>
@@ -445,7 +454,7 @@
         data() {
             return {
                 token: this.$cookies.get('token'),
-                userId: this.$cookies.get('userId'),
+                userId: this.$store.state.id,
                 all_weibo_lis: [],
                 is_follow: false,
                 textarea: '',
@@ -456,6 +465,7 @@
                 totalPages: 0,  // 取后端返回内容的总页数
                 noMore: false,
                 isScroll: true,  // 是否可以滚动
+                searchKeyword: '' // 页面搜索关键词
             }
         },
 
@@ -465,7 +475,11 @@
                 this.isScroll = false  // 当前的滚动不能影响加载数据
                 if (!(this.count >= this.totalPages - 1)) {
                     this.count += 1;  // 页数 +1
-                    this.getWeibo();  // 查询更多微博
+                    if (!searchKeyword) {
+                        this.getWeibo();  // 查询更多微博
+                    } else {
+                        this.searchDiary()
+                    }
                 } else {
                     this.noMore = true
                 }
@@ -481,7 +495,11 @@
                     }
                 }).then(res => {
                     this.totalPages = res.data.totalPages;
-                    this.all_weibo_lis = this.all_weibo_lis.concat(res.data.result);  // 将新微博拼在现有的微博列表后面
+                    if (!this.count) {
+                        this.all_weibo_lis = []
+                    }
+                    this.all_weibo_lis = this.all_weibo_lis.concat(res.data.diaries);  // 将新微博拼在现有的微博列表后面
+                    // console.log(this.all_weibo_lis)
                     // 设置定时器 给网页一点渲染的时间 然后再执行微博内容替换方法
                     clearTimeout(this.timer);
                     this.timer = setTimeout(() => {
@@ -509,9 +527,8 @@
             // 检查关注状态
             check_follow(userId, checkId) {
                 // 发送 get 请求获取当前用户的关注状态
-                this.$axios.get('/api/user/check_favorite', {
+                this.$axios.get('/api/user/check_follow', {
                     params: {
-                        userId: userId,  // 当前登录用户
                         checkId: checkId  // 点击的用户
                     }
                 }).then(response => {
@@ -523,7 +540,7 @@
 
             // 修改关注状态
             change_follow(userId, followId) {
-                if (!this.$cookies.get('userId')) {
+                if (!this.$store.state.id) {
                     this.$message({
                         message: '请先登录',
                         type: 'warning',
@@ -532,10 +549,9 @@
                 } else {
                     this.$axios({
                         method: 'post',
-                        url: '/api/user/change_favorite',
+                        url: '/api/user/change_follow',
                         headers: {Authorization: this.token},
                         data: qs.stringify({
-                            userId: userId,  // 当前登录的用户
                             followId: followId  //修改关注状态的用户
                         })
                     }).then(response => {
@@ -565,7 +581,7 @@
                     // 清空标签原内容
                     ele.innerText = '';
                     // 使用后端传来的数据替换
-                    let content_lis = this.all_weibo_lis[e].content;  // 拿到后端传来的对应微博内容
+                    let content_lis = this.all_weibo_lis[e].diary.content;  // 拿到后端传来的对应微博内容
                     for (let j = 0; content_lis && j < content_lis.length; j++) {
                         let reg1 = /https:/  // 定义正则匹配规则 匹配以 https: 开头的
                         if (reg1.test(content_lis[j])) {
@@ -585,7 +601,7 @@
 
             // 打开新标签页，跳转到个人页面
             other_user_page(otherId) {
-                if (this.userId == otherId) {  // 如果点击的是自己的头像，就进入 MyWeibo 的页面
+                if (this.userId === otherId) {  // 如果点击的是自己的头像，就进入 MyWeibo 的页面
                     let route = this.$router.resolve({
                         name: 'MyWeibo',
                     })
@@ -622,29 +638,28 @@
                             }
                         }).then(response => {
                             // 生成新的标签，将后端返回的评论内容渲染出来
-                            let result_lis = response.data.result
-                            console.log(result_lis)
-
+                            let result_lis = response.data.comments
                             for (let i = 0; i < result_lis.length; i++) {
                                 let single_comment_dic = result_lis[i]
+                                // console.log(single_comment_dic)
                                 // 先判断当前页面是否已经有了要创建的标签
-                                let already_have = document.getElementById('comment' + single_comment_dic['id'])
+                                let already_have = document.getElementById('comment' + single_comment_dic.comment.id)
                                 if (!already_have) {  // 如果标签不存在，就创建
                                     // 先造评论外层的标签
                                     let outer_div = $('<div class="outer_div"></div>')
                                     comment.append(outer_div)
                                     // 造评论标签
                                     let parent_comment = $('<div class="parent_comment clearfix"></div>')
-                                    parent_comment.attr('id', 'comment' + single_comment_dic['id'])
-                                    parent_comment.attr('userId', single_comment_dic['userId'])
+                                    parent_comment.attr('id', 'comment' + single_comment_dic.comment.id)
+                                    parent_comment.attr('userId', single_comment_dic.user.id)
                                     parent_comment.attr('style', 'border-top: 1px solid #cacaca; margin-left: 4%; margin-right: 4%; padding-top: 8px; padding-bottom: 8px;')
                                     // 评论的用户头像标签
                                     let comment_user_icon = $('<a href="#" class="comment_user_icon"></a>')
                                     // 给用户头像添加点击事件
                                     comment_user_icon.on('click', function () {
-                                        other_user_page(single_comment_dic['userId'])
+                                        other_user_page(single_comment_dic.user.id)
                                     })
-                                    let icon = $('<img>').attr('src', single_comment_dic['avatar'])
+                                    let icon = $('<img>').attr('src', single_comment_dic.user.avatar)
                                     icon.attr('style', 'width: 40px; height: 40px; float: left; margin-top: 0.1em;')
                                     comment_user_icon.append(icon)
                                     parent_comment.append(comment_user_icon)
@@ -653,12 +668,12 @@
                                     comment_outer_div.attr('style', 'margin-left: 2.9em;')  // 因为左侧头像宽 2.6em，这里整体向右偏 2.9em
                                     // 评论用户名标签
                                     let comment_user_name = $('<a href="#" class="comment_user_name"></a>')
-                                    comment_user_name.attr('comment_username', single_comment_dic['nickname'])
-                                    comment_user_name.text(single_comment_dic['nickname'] + '：')
+                                    comment_user_name.attr('comment_username', single_comment_dic.user.nickname)
+                                    comment_user_name.text(single_comment_dic.user.nickname + '：')
                                     comment_user_name.attr('style', 'color: #353535; float: left;')
                                     // 给用户名标签加上点击事件
                                     comment_user_name.on('click', function () {
-                                        other_user_page(single_comment_dic['userId'])
+                                        other_user_page(single_comment_dic.user.id)
                                     })
                                     // 给用户名 a 标签加上 hover 样式
                                     comment_user_name.hover(function () {
@@ -670,10 +685,10 @@
                                     // 评论内容标签
                                     let comment_user_content = $('<div class="comment_user_content"></div>')
                                     // 如果当前评论是子评论
-                                    if (single_comment_dic['parentId']) {
+                                    if (single_comment_dic.comment.parentId) {
                                         // 先拿到根评论的用户名
-                                        let parent_ele = document.getElementById('comment' + single_comment_dic['parentId'])
-                                        console.log(parent_ele)
+                                        let parent_ele = document.getElementById('comment' + single_comment_dic.comment.parentId)
+                                        // console.log(parent_ele)
                                         let parent_user_id = $(parent_ele).attr('userId')
                                         let parent_username = $(parent_ele).children().first().next().children().first().text()
                                         // 再拼接
@@ -691,27 +706,27 @@
                                         })
                                         comment_user_content.append('回复')
                                         comment_user_content.append(comment_replay)
-                                        for (let i = 0; i < single_comment_dic['content'].length; i++) {
+                                        for (let i = 0; i < single_comment_dic.comment.content.length; i++) {
                                             let reg1 = /https:/
-                                            if (reg1.test(single_comment_dic['content'][i])) {
+                                            if (reg1.test(single_comment_dic.comment.content[i])) {
                                                 let imgEle = $('<img>')
-                                                imgEle.attr('src', single_comment_dic['content'][i])
+                                                imgEle.attr('src', single_comment_dic.comment.content[i])
                                                 imgEle.attr('style', 'width: 1.2em; margin-left: 0.2em; position: relative; bottom: 0.1em;')
                                                 comment_user_content.append(imgEle)
                                             } else {
-                                                comment_user_content.append(single_comment_dic['content'][i])
+                                                comment_user_content.append(single_comment_dic.comment.content[i])
                                             }
                                         }
                                     } else {
-                                        for (let i = 0; i < single_comment_dic['content'].length; i++) {
+                                        for (let i = 0; i < single_comment_dic.comment.content.length; i++) {
                                             let reg1 = /https:/
-                                            if (reg1.test(single_comment_dic['content'][i])) {
+                                            if (reg1.test(single_comment_dic.comment.content[i])) {
                                                 let imgEle = $('<img>')
-                                                imgEle.attr('src', single_comment_dic['content'][i])
+                                                imgEle.attr('src', single_comment_dic.comment.content[i])
                                                 imgEle.attr('style', 'width: 1.2em; margin-left: 0.2em; position: relative; bottom: 0.1em;')
                                                 comment_user_content.append(imgEle)
                                             } else {
-                                                comment_user_content.append(single_comment_dic['content'][i])
+                                                comment_user_content.append(single_comment_dic.comment.content[i])
                                             }
                                         }
                                     }
@@ -721,26 +736,26 @@
                                     // 评论时间和回复按钮标签
                                     let time_and_replay = $('<div class="time_and_replay clearfix"></div>')
                                     time_and_replay.attr('style', 'text-align: left;')
-                                    let comment_time = $('<span class="comment_time"></span>').text(single_comment_dic['commentTime'])
+                                    let comment_time = $('<span class="comment_time"></span>').text(single_comment_dic.comment.commentTime)
                                     comment_time.attr('style', 'font-size: 88%; color: grey;')
                                     time_and_replay.append(comment_time)
-                                    if (this.$cookies.get('userId') == single_comment_dic['userId']) {
+                                    if (this.$store.state.id == single_comment_dic.user.id) {
                                         // 如果当前评论是当前登录的用户发表的，就显示删除按钮
                                         let delete_button = $('<button type="button" class="el-button el-button--text"><span>删除</span></button>')
                                         delete_button.attr('style', 'padding: 0; float: right; color: rgb(249, 151, 9)')
-                                        delete_button.attr('commentId', single_comment_dic['id'])  // 给删除按钮绑定评论 id
+                                        delete_button.attr('commentId', single_comment_dic.comment.id)  // 给删除按钮绑定评论 id
                                         delete_button.on('click', function () {
-                                            delete_comment(single_comment_dic['userId'], single_comment_dic['id'], single_comment_dic['diaryId'])
+                                            delete_comment(single_comment_dic.comment.id, single_comment_dic.comment.diaryId)
                                         })
                                         time_and_replay.append(delete_button)
                                     } else {
                                         // 如果是其他人发表的，就显示回复按钮
                                         let replay_button = $('<button type="button" class="el-button el-button--text"><span>回复</span></button>')
                                         replay_button.attr('style', 'padding: 0; float: right;')
-                                        replay_button.attr('commentId', single_comment_dic['id'])  // 给回复按钮绑定评论 id
-                                        replay_button.attr('comment_username', single_comment_dic['nickname'])  // 给回复按钮绑定评论用户名
+                                        replay_button.attr('commentId', single_comment_dic.comment.id)  // 给回复按钮绑定评论 id
+                                        replay_button.attr('comment_username', single_comment_dic.user.nickname)  // 给回复按钮绑定评论用户名
                                         replay_button.on('click', function () {
-                                            replay_comment(single_comment_dic['nickname'], single_comment_dic['id'], single_comment_dic['diaryId'])
+                                            replay_comment(single_comment_dic.user.nickname, single_comment_dic.comment.id, single_comment_dic.comment.diaryId)
                                         })
                                         time_and_replay.append(replay_button)
                                     }
@@ -792,7 +807,7 @@
 
             // 点击回复评论按钮时，给输入框加入要回复的人名
             replay_comment(comment_username, commentId, diaryId) {
-                if (!this.$cookies.get('userId')) {
+                if (!this.$store.state.id) {
                     this.$message({
                         message: '请先登录',
                         type: 'warning',
@@ -802,14 +817,14 @@
                     this.parentID = commentId;
                     this.textarea = '@' + comment_username + '：';
                     // 输入框获取焦点
-                    let current_weibo = document.getElementById(diaryId)
+                    let current_weibo = document.getElementById('diary' + diaryId)
                     current_weibo.children[3].children[0].children[0].children[0].focus()
                 }
             },
 
             // 点击删除评论按钮时
-            delete_comment(userId, commentId, diaryId) {
-                if (!this.$cookies.get('userId')) {
+            delete_comment(commentId, diaryId) {
+                if (!this.$store.state.id) {
                     this.$message({
                         message: '请先登录',
                         type: 'warning',
@@ -821,13 +836,11 @@
                         cancelButtonText: '取消',
                         type: 'warning'
                     }).then(() => {
-                        let userId = parseInt(this.userId)
                         this.$axios({
                             method: 'post',
                             url: '/api/comment/delete_comment',
                             headers: {Authorization: this.token},
                             data: qs.stringify({
-                                userId: userId,
                                 commentId: commentId
                             })
                         }).then(response => {
@@ -839,10 +852,10 @@
                                     center: true
                                 })
                                 // 删除成功，将当前评论标签删掉
-                                document.getElementById(commentId).remove()
+                                document.getElementById('comment' + commentId).remove()
                                 // 将显示评论数按钮的值 -1
-                                let comment_num = parseInt(document.getElementById(diaryId).children[2].children[0].children[1].innerText)
-                                document.getElementById(diaryId).children[2].children[0].children[1].innerText = comment_num - 1
+                                let comment_num = parseInt(document.getElementById('diary' + diaryId).children[2].children[0].children[1].innerText)
+                                document.getElementById('diary' + diaryId).children[2].children[0].children[1].innerText = comment_num - 1
                             } else {
                                 this.$message({
                                     message: response.data.msg,
@@ -867,7 +880,7 @@
             // 点击发表评论时
             post_comment(diaryId) {
                 // 先验证当前是否登录
-                if (!this.$cookies.get('userId')) {
+                if (!this.$store.state.id) {
                     this.$message({
                         message: '请先登录',
                         type: 'warning',
@@ -879,16 +892,11 @@
                         let indexNum = this.textarea.indexOf('：') + 1;
                         this.textarea = this.textarea.slice(indexNum)
                     }
-                    console.log(this.$cookies.get('userId'))
-                    console.log(this.textarea)
-                    console.log(diaryId)
-                    console.log(this.parentID)
                     this.$axios({
                         method: 'post',
                         url: '/api/comment/add_comment',
                         headers: {Authorization: this.token},
                         data: qs.stringify({
-                            userId: this.$cookies.get('userId'),
                             comment: this.textarea,
                             diaryId: diaryId,
                             parentId: this.parentID
@@ -901,18 +909,18 @@
                                 duration: 1500,
                                 center: true
                             })
-                            let current_weibo = document.getElementById(diaryId)
+                            let current_weibo = document.getElementById('diary' + diaryId)
                             // 将当前显示的评论数 +1
                             let comment_number = current_weibo.children[2].children[0].children[1].innerText
                             current_weibo.children[2].children[0].children[1].innerText = parseInt(comment_number) + 1
-                            let single_comment_dic = response.data.result
+                            let single_comment_dic = response.data.comment
                             // 创建一个渲染评论的标签，添加到评论楼的最下方（查看更多的上方）
                             // 先造评论外层的标签
                             let outer_div = $('<div class="outer_div"></div>')
                             // 造评论标签
                             let parent_comment = $('<div class="parent_comment clearfix"></div>')
-                            parent_comment.attr('id', 'comment' + single_comment_dic['id'])
-                            parent_comment.attr('userId', single_comment_dic['userId'])
+                            parent_comment.attr('id', 'comment' + single_comment_dic.id)
+                            parent_comment.attr('userId', this.$store.state.id)
                             parent_comment.attr('style', 'border-top: 1px solid #cacaca; margin-left: 4%; margin-right: 4%; padding-top: 8px; padding-bottom: 8px;')
                             this.textarea = '';
                             this.parentID = 0;
@@ -920,9 +928,9 @@
                             let comment_user_icon = $('<a href="#" class="comment_user_icon"></a>')
                             // 给用户头像添加点击事件
                             comment_user_icon.on('click', function () {
-                                other_user_page(single_comment_dic['userId'])
+                                other_user_page(this.$store.state.id)
                             })
-                            let icon = $('<img>').attr('src', single_comment_dic['avatar'])
+                            let icon = $('<img>').attr('src', this.$store.state.avatar)
                             icon.attr('style', 'width: 40px; height: 40px; float: left; margin-top: 0.1em;')
                             comment_user_icon.append(icon)
                             parent_comment.append(comment_user_icon)
@@ -931,12 +939,12 @@
                             comment_outer_div.attr('style', 'margin-left: 2.9em;')  // 因为左侧头像宽 9%，这里整体向右偏 2.9em
                             // 评论用户名标签
                             let comment_user_name = $('<a href="#" class="comment_user_name"></a>')
-                            comment_user_name.attr('comment_username', single_comment_dic['nickname'])
-                            comment_user_name.text(single_comment_dic['nickname'] + '：')
+                            comment_user_name.attr('comment_username', this.$store.state.nickname)
+                            comment_user_name.text(this.$store.state.nickname + '：')
                             comment_user_name.attr('style', 'color: #353535; float: left;')
                             // 给用户名标签加上点击事件
                             comment_user_name.on('click', function () {
-                                other_user_page(single_comment_dic['userId'])
+                                other_user_page(this.$store.state.id)
                             })
                             // 给用户名 a 标签加上 hover 样式
                             comment_user_name.hover(function () {
@@ -948,9 +956,9 @@
                             // 评论内容标签
                             let comment_user_content = $('<div class="comment_user_content"></div>')
                             // 如果当前评论是子评论
-                            if (single_comment_dic['parentId']) {
+                            if (single_comment_dic.parentId) {
                                 // 先拿到根评论的用户名
-                                let parent_ele = document.getElementById('comment' + single_comment_dic['parentId'])
+                                let parent_ele = document.getElementById('comment' + single_comment_dic.parentId)
                                 let parent_user_id = $(parent_ele).attr('userId')
                                 let parent_username = $(parent_ele).children().first().next().children().first().text()
                                 // 再拼接
@@ -969,27 +977,27 @@
                                 comment_user_content.append('回复')
                                 comment_user_content.append(comment_replay)
                                 // 对拿到的评论内容进行判断，如果是表情就变成带 url 的 img 标签
-                                for (let i = 0; i < single_comment_dic['content'].length; i++) {
+                                for (let i = 0; i < single_comment_dic.content.length; i++) {
                                     let reg1 = /https:/
-                                    if (reg1.test(single_comment_dic['content'][i])) {
+                                    if (reg1.test(single_comment_dic.content[i])) {
                                         let imgEle = $('<img>')
-                                        imgEle.attr('src', single_comment_dic['content'][i])
+                                        imgEle.attr('src', single_comment_dic.content[i])
                                         imgEle.attr('style', 'width: 1.2em; margin-left: 0.2em; position: relative; bottom: 0.1em;')
                                         comment_user_content.append(imgEle)
                                     } else {
-                                        comment_user_content.append(single_comment_dic['content'][i])
+                                        comment_user_content.append(single_comment_dic.content[i])
                                     }
                                 }
                             } else {
-                                for (let i = 0; i < single_comment_dic['content'].length; i++) {
+                                for (let i = 0; i < single_comment_dic.content.length; i++) {
                                     let reg1 = /https:/
-                                    if (reg1.test(single_comment_dic['content'][i])) {
+                                    if (reg1.test(single_comment_dic.content[i])) {
                                         let imgEle = $('<img>')
-                                        imgEle.attr('src', single_comment_dic['content'][i])
+                                        imgEle.attr('src', single_comment_dic.content[i])
                                         imgEle.attr('style', 'width: 1.2em; margin-left: 0.2em; position: relative; bottom: 0.1em;')
                                         comment_user_content.append(imgEle)
                                     } else {
-                                        comment_user_content.append(single_comment_dic['content'][i])
+                                        comment_user_content.append(single_comment_dic.content[i])
                                     }
                                 }
                             }
@@ -999,14 +1007,14 @@
                             // 评论时间和回复按钮标签
                             let time_and_replay = $('<div class="time_and_replay clearfix"></div>')
                             time_and_replay.attr('style', 'text-align: left;')
-                            let comment_time = $('<span class="comment_time"></span>').text(single_comment_dic['commentTime'])
+                            let comment_time = $('<span class="comment_time"></span>').text(single_comment_dic.commentTime)
                             comment_time.attr('style', 'font-size: 88%; color: grey;')
                             time_and_replay.append(comment_time)
                             let delete_button = $('<button type="button" class="el-button el-button--text"><span>删除</span></button>')
                             delete_button.attr('style', 'padding: 0; float: right; color: rgb(249, 151, 9)')
-                            delete_button.attr('commentId', single_comment_dic['id'])  // 给删除按钮绑定评论 id
+                            delete_button.attr('commentId', single_comment_dic.id)  // 给删除按钮绑定评论 id
                             delete_button.on('click', function () {
-                                delete_comment(single_comment_dic['userId'], single_comment_dic['id'], single_comment_dic['diaryId'])
+                                delete_comment(single_comment_dic.id, single_comment_dic.diaryId)
                             })
                             time_and_replay.append(delete_button)
                             comment_outer_div.append(time_and_replay)
@@ -1029,7 +1037,7 @@
 
             // 点击点赞按钮时
             like_or_unlike(e, diaryId) {
-                if (!this.$cookies.get('userId')) {
+                if (!this.$store.state.id) {
                     this.$message({
                         message: '请先登录',
                         type: 'warning',
@@ -1089,10 +1097,52 @@
                     })
                 }
             },
+
+            // 搜索框处理函数
+            searchInputHandler() {
+                this.count = 0 // 翻页清零
+                this.searchDiary()
+            },
+
+            // 通过搜索框关键词查找日记（无关键词查找全局）
+            searchDiary() {
+                if (!this.searchKeyword) {
+                    this.getWeibo()
+                } else {
+                    console.log('search', this.searchKeyword, this.count)
+                    this.$axios.get('/api/diary/search_diary', {
+                        params: {
+                            keyword: this.searchKeyword,
+                            pageNumber: this.count,
+                            pageSize: 10  // 每页查询条数
+                        }
+                    }).then(result => {
+                        this.totalPages = result.data.totalPages;
+                        // console.log(result.data.diaries)
+                        // console.log(!this.count)
+                        if (!this.count) {
+                            this.all_weibo_lis = []
+                        }
+                        this.all_weibo_lis = this.all_weibo_lis.concat(result.data.diaries);  // 将新微博拼在现有的微博列表后面
+                        // console.log(this.all_weibo_lis)
+                        // 设置定时器 给网页一点渲染的时间 然后再执行微博内容替换方法
+                        clearTimeout(this.timer);
+                        this.timer = setTimeout(() => {
+                            this.replaceWeiboContent()
+                        }, 10)
+                        this.loading = false;
+                    }).catch(err => {
+                        this.loading = false;
+                    })
+                }
+
+            }
         },
 
         created() {
-            this.getWeibo()
+            this.searchKeyword = this.$route.query.searchKeyword
+            console.log(this.searchKeyword)
+            this.searchDiary()
         },
 
         mounted() {
@@ -1126,7 +1176,7 @@
 
     /* 巨幕样式 >>> */
     .jumbotron {
-        background: url("../assets/img/StarNight.jpg") no-repeat;
+        background: url("../assets/img/road.png") no-repeat;
         background-size: cover;
         border-radius: 6px;
         padding-bottom: 1.25em;
@@ -1156,6 +1206,47 @@
         background-color: #fafafa;
         border-top: 2px solid rgb(249, 151, 9);
         box-shadow: 0 2px 4px rgba(0, 0, 0, .12);
+    }
+
+    /* 搜索框样式 */
+    .box {
+        height: 50px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 0 10px 0;
+    }
+
+    .searchBox {
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .searchInput {
+        display: inline-block;
+        width: 80%;
+        height: 38px;
+        border: 1px solid #cccccc;
+        float: left;
+        box-sizing: border-box;
+        -moz-box-sizing: border-box; /* Firefox */
+        -webkit-box-sizing: border-box; /* Safari */
+        border-bottom-left-radius: 5px;
+        border-top-left-radius: 5px;
+    }
+
+    .searchButton {
+        display: inline-block;
+        width: 20%;
+        height: 38px;
+        line-height: 40px;
+        float: left;
+        background-color: #F99709;
+        font-size: 16px;
+        cursor: pointer;
+        border-bottom-right-radius: 5px;
+        border-top-right-radius: 5px;
+        border: none;
+        color: #fff;
     }
 
     /* 单条微博上部分样式 >>> */

@@ -73,7 +73,7 @@ export default {
           password: this.password,
           confirmPassword: this.confirmPassword
         }).then(response => {
-          if (response.data.code === 201) {
+          if (response.data.code === 200) {
             this.$message({
               message: '注册成功，请登录',
               type: 'success',

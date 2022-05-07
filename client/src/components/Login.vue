@@ -55,38 +55,34 @@
             login_password() {
                 if (this.username && this.password) {  // 如果用户名和密码都有
                     // 携带数据发送请求
-                    this.$axios.post('/api/user/login/',
+                    this.$axios.post('/api/user/login',
                         qs.stringify({
                             username: this.username,
                             password: this.password,
                         })).then(response => {
-                        console.log(response.data.code)
-                        if (response.data.code === 200) {
-                            this.$message({
-                                message: '登录成功，' + response.data.nickname,
-                                type: 'success',
-                                duration: 1500,
-                                center: true
-                            })
-                            // 把用户信息保存到cookie中
-                            // this.$cookies.set('key', 'value', '过期时间，单位秒')
-                            this.$cookies.set('token', response.data.token, '7d')  // 7d表示一天
-                            this.$cookies.set('userId', response.data.userId, '7d')
-                            this.$cookies.set('avatar', response.data.avatar, '7d')
-                            this.$cookies.set('nickname', response.data.nickname, '7d')
-                            this.$emit('close')  // 关闭登录模态框（子传父）
-                            this.$emit('loginsuccess')
-                        } else {
-                            this.$message({
-                                message: response.data.msg.non_field_errors[0],
-                                type: 'error',
-                                duration: 1500,
-                                center: true,
-                                onClose: () => {
-                                    this.username = ''
-                                    this.password = ''
-                                }
-                            })
+                            // console.log(response.data.code)
+                            if (response.data.code === 200) {
+                                this.$message({
+                                    message: '登录成功，' + response.data.user.nickname,
+                                    type: 'success',
+                                    duration: 1500,
+                                    center: true
+                                })
+                                // 把用户信息保存到store中
+                                this.$store.commit('login', response.data.user)
+                                this.$emit('close')  // 关闭登录模态框（子传父）
+                                this.$emit('loginsuccess')
+                            } else {
+                                this.$message({
+                                    message: response.data.msg.non_field_errors[0],
+                                    type: 'error',
+                                    duration: 1500,
+                                    center: true,
+                                    onClose: () => {
+                                        this.username = ''
+                                        this.password = ''
+                                    }
+                                })
                         }
                     }).catch(errors => {
                         this.$message({

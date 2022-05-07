@@ -2,38 +2,8 @@
     <div class="middle_left">
         <div class="go_home" id="divId">
             <ul>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">热门</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">头条</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">视频</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">榜单</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">搞笑</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">社会</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">时尚</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">电影</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">美女</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">体育</a>
-                </li>
-                <li>
-                    <a class="btn btn-default" href="/" role="button">动漫</a>
+                <li v-for="(value, hotWord) in hotWords">
+                    <a class="btn btn-default" role="button" @click="hotWordHandler(hotWord)">{{ hotWord }}</a>
                 </li>
             </ul>
         </div>
@@ -43,12 +13,24 @@
 <script>
     export default {
         name: "Middle_left",
+
+        data() {
+            return {
+                hotWords: []
+            }
+        },
+
+        created() {
+            this.hotKeywords()
+        },
+
         mounted() {//给window添加一个滚动滚动监听事件
             window.addEventListener('scroll', this.handleScroll)
         },
 
         methods: {
-            handleScroll() { //改变元素#searchBar的top值
+            //改变元素#searchBar的top值
+            handleScroll() {
                 var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
                 var offsetTop = document.querySelector('#divId').offsetTop;
 
@@ -59,6 +41,26 @@
                     document.querySelector('#divId').style.top = '51px';
                 }
             },
+
+            hotWordHandler(keyword) {
+                if (keyword === this.$route.query.searchKeyword) {
+                    this.$router.go(0)
+                } else {
+                    this.$router.push({
+                        name: 'Home',
+                        query: {
+                            searchKeyword: keyword
+                        }
+                    })
+                }
+            },
+
+            hotKeywords() {
+                this.$axios.get('/api/diary/hot_keyword').then(result => {
+                    // console.log(result.data.hotKeyword)
+                    this.hotWords = result.data.hotKeyword
+                })
+            }
         },
         destroyed() {//离开该页面需要移除这个监听的事件
             window.removeEventListener('scroll', this.handleScroll)

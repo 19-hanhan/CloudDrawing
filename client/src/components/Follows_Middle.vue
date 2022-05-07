@@ -9,12 +9,12 @@
                     </div>
                     <el-divider></el-divider>  <!-- 分隔线 -->
                     <div v-if="follows_lis" id="d1_2">
-                        <div v-for="follow in follows_lis" :key="follow.nickname" class="follow">
-                            <a href="#" @click="other_user_page(follow.id)">
-                                <img :src="follow.icon" alt="">
-                                <span>{{ follow.nickname }}</span>
+                        <div v-for="follow in follows_lis" :key="follow.user.nickname" class="follow">
+                            <a href="#" @click="other_user_page(follow.user.id)">
+                                <img :src="follow.user.avatar" alt="">
+                                <span>{{ follow.user.nickname }}</span>
                             </a>
-                            <el-button type="danger" round size="mini" @click="change_follow(userId, follow.id)">取消关注
+                            <el-button type="danger" round size="mini" @click="change_follow(userId, follow.user.id)">取消关注
                             </el-button>
                         </div>
                     </div>
@@ -52,7 +52,6 @@
                         url: '/api/user/change_follow',
                         headers: {Authorization: this.$cookies.get('token')},
                         data: qs.stringify({
-                            userId: userId,
                             followId: unfollowId
                         })
                     }).then(response => {
@@ -94,7 +93,7 @@
         },
         created() {
             // 获取所有关注者
-            this.$axios.get('/api/user/get_favorite',
+            this.$axios.get('/api/user/get_follow',
                 {params: {userId: this.userId}}
             ).then(response => {
                 this.follows_lis = response.data.result;

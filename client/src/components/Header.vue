@@ -29,10 +29,9 @@
                         <ul class="nav navbar-nav navbar-right">
                             <li><a href="/home"><span class="glyphicon glyphicon-home"></span> 首页</a></li>
                             <!-- 登录后功能 -->
-                            <li v-if="token"><a href="/NewWeibo"><span class="glyphicon glyphicon-edit"></span> 新微博</a>
+                            <li v-if="token"><a href="/NewWeibo"><span class="glyphicon glyphicon-edit"></span> 新日记</a>
                             </li>
-                            <li v-if="token"><a href="/MyWeibo"><span class="glyphicon glyphicon-user"></span> {{
-                                nickname }}</a></li>
+                            <li v-if="token"><a href="/MyWeibo"><span class="glyphicon glyphicon-user"></span> {{ this.nickname }}</a></li>
                             <li v-if="token">
                                 <a id="message_button" @click="read_message">
                                     <el-badge v-if="this.new_message" class="item"><span
@@ -74,40 +73,40 @@
                     </div>
                     <div v-if="!this.message_lis" style="color: #868686; font-size: large; font-weight: 300;">暂无消息</div>
                     <el-col v-if="this.message_lis">
-                        <div class="card_outer_div" v-for="message in this.message_lis" v-if="!message.read">
+                        <div class="card_outer_div" v-for="message in this.message_lis" v-if="!message.notice.isRead">
                             <el-card class="message_card unread clearfix" shadow="never">
                                 <div class="message_content">
                                     <a href="#"
-                                       @click="other_user_page(message.senderId)"><span>{{ message.sender }} -> </span></a>
-                                    <span>{{ message.action }} | </span>
-                                    <a href="#" v-if="message.actionContent"
-                                       @click="single_weibo_page(message.actionId)"><span> {{ message.actionContent }}</span></a>
+                                       @click="other_user_page(message.sender.id)"><span>{{ message.sender.nickname }} -> </span></a>
+                                    <span>{{ message.action.nickname }} | </span>
+                                    <a href="#" v-if="message.notice.actionContent"
+                                       @click="single_weibo_page(message.notice.diaryId)"><span> {{ message.notice.actionContent }}</span></a>
                                 </div>
                                 <div class="time_and_button">
-                                    <span class="create_time">{{ message.createTime }}</span>
+                                    <span class="create_time">{{ message.notice.createTime }}</span>
                                     <el-button class="card_button have_read" type="text" style="color: #409eff"
-                                               @click="have_read($event, message.id)">
+                                               @click="have_read($event, message.notice.id)">
                                         标为已读
                                     </el-button>
                                     <el-button class="card_button" type="text" style="color: #f56c6c"
-                                               @click="del_notice($event, message.id)">删除
+                                               @click="del_notice($event, message.notice.id)">删除
                                     </el-button>
                                 </div>
                             </el-card>
                         </div>
-                        <div class="card_outer_div" v-for="message in this.message_lis" v-if="message.read">
+                        <div class="card_outer_div" v-for="message in this.message_lis" v-if="message.notice.isRead">
                             <el-card class="message_card read clearfix" shadow="never">
                                 <div class="message_content">
                                     <a href="#"
-                                       @click="other_user_page(message.senderId)"><span>{{ message.sender }} -> </span></a>
-                                    <span>{{ message.action }} | </span>
-                                    <a href="#" v-if="message.actionContent"
-                                       @click="single_weibo_page(message.actionId)"><span> {{ message.actionContent }}</span></a>
+                                       @click="other_user_page(message.sender.id)"><span>{{ message.sender.nickname }} -> </span></a>
+                                    <span>{{ message.action.nickname }} | </span>
+                                    <a href="#" v-if="message.notice.actionContent"
+                                       @click="single_weibo_page(message.notice.diaryId)"><span> {{ message.notice.actionContent }}</span></a>
                                 </div>
                                 <div class="time_and_button">
-                                    <span class="create_time">{{ message.createTime }}</span>
+                                    <span class="create_time">{{ message.notice.createTime }}</span>
                                     <el-button class="card_button" type="text" style="color: #f56c6c"
-                                               @click="del_notice($event, message.id)">删除
+                                               @click="del_notice($event, message.notice.id)">删除
                                     </el-button>
                                 </div>
                             </el-card>
@@ -129,7 +128,6 @@
 
         data() {
             return {
-                nickname: '',
                 isLogin: false,
                 isRegister: false,
                 token: '',
@@ -143,15 +141,15 @@
             // 单个通知变为已读
             have_read(e, id) {
                 this.$axios({
-                    method: 'put',
-                    url: '/api/notice/all_notice',
+                    method: 'post',
+                    url: '/api/notice/change_notice',
                     headers: {Authorization: this.token},
                     data: qs.stringify({
-                        noticeId: id,
-                        userId: this.$cookies.get('userId')
+                        noticeId: id
                     })
                 }).then(res => {
                     // 将通知内的文本变为灰色
+                    // console.log(res.data);
                     let time_and_button = e.target.parentNode.previousElementSibling
                     time_and_button.style.color = '#a4a4a4'
                     let message_content = time_and_button.parentNode.previousSibling
@@ -173,11 +171,10 @@
             // 全部变为已读
             have_read_all() {
                 this.$axios({
-                    method: 'put',
-                    url: '/api/notice/all_notice',
+                    method: 'post',
+                    url: '/api/notice/change_notice',
                     headers: {Authorization: this.token},
                     data: qs.stringify({
-                        userId: this.$cookies.get('userId')
                     })
                 }).then(res => {
                     for (let e = 0; e < $('.unread').length; e++) {
@@ -203,12 +200,11 @@
                     type: 'warning'
                 }).then(() => {
                     this.$axios({
-                        method: 'delete',
-                        url: '/api/notice/all_notice',
+                        method: 'post',
+                        url: '/api/notice/delete_notice',
                         headers: {Authorization: this.token},
                         data: {
                             noticeId: id,
-                            userId: this.$cookies.get('userId')
                         }
                     }).then(res => {
                         // 删除当前消息标签
@@ -231,11 +227,10 @@
                     type: 'warning'
                 }).then(() => {
                     this.$axios({
-                        method: 'delete',
-                        url: '/api/notice/all_notice',
+                        method: 'post',
+                        url: '/api/notice/delete_notice',
                         headers: {Authorization: this.token},
                         data: {
-                            userId: this.$cookies.get('userId')
                         }
                     }).then(res => {
                         // 删除所有消息标签
@@ -257,9 +252,11 @@
                     method: 'get',
                     url: '/api/notice/all_notice',
                     headers: {Authorization: this.token},
-                    params: {userId: this.$cookies.get('userId'),}
+                    params: {}
                 }).then(res => {
-                    this.message_lis = res.data.result
+                    // console.log(res.data)
+                    this.message_lis = res.data.notices
+                    // console.log(this.message_lis)
                 }).catch(error => {
                     console.log(error)
                 })
@@ -267,7 +264,7 @@
 
             // 打开新标签页，跳转到个人页面
             other_user_page(other_id) {
-                if (this.userId == other_id) {  // 如果点击的是自己的头像，就进入 MyWeibo 的页面
+                if (this.userId === other_id) {  // 如果点击的是自己的头像，就进入 MyWeibo 的页面
                     let route = this.$router.resolve({
                         name: 'MyWeibo',
                     })
@@ -283,6 +280,7 @@
 
             // 打开新标签页，跳转到单个微博页面
             single_weibo_page(actionId) {
+                console.log(actionId)
                 let route = this.$router.resolve({
                     name: 'SingleWeibo',
                 })
@@ -312,13 +310,9 @@
 
             // 退出登录时删除 cookie 并将多个变量置为空
             login_out() {
-                this.$cookies.remove('token')
-                this.$cookies.remove('userId')
-                this.$cookies.remove('avatar')
-                this.$cookies.remove('nickname')
-                this.userId = ''
+                this.$store.commit('logout')
+                this.$cookies.remove('token');
                 this.token = ''
-                this.nickname = ''
             },
 
             close_login() {
@@ -329,14 +323,22 @@
                 this.isRegister = false;
             }
         },
+
+        computed: {
+            nickname() {
+                return this.$store.state.nickname
+            }
+        },
+
         components: {
             Login,
-            Register,
+            Register
         },
 
         created() {
-            this.token = this.$cookies.get('token')
-            this.nickname = this.$cookies.get('nickname')
+            // console.log(this.$store.state.id)
+            if (this.$cookies.get('token') !== 'undefined')
+                this.token = this.$cookies.get('token')
 
             // 页面创建时如果有 token 就去检查是否有未读消息
             if (this.token) {
@@ -344,9 +346,7 @@
                     method: 'get',
                     url: '/api/notice/new_notice',
                     headers: {Authorization: this.token},
-                    params: {
-                        userId: this.$cookies.get('userId')
-                    }
+                    params: {}
                 }).then(res => {
                     this.new_message = res.data.code === 200;
                     // $('.navbar-toggle').css('border', '1px solid red')

@@ -9,16 +9,16 @@
           </div>
           <el-divider></el-divider>  <!-- 分隔线 -->
           <div id="d1_2">
-            <div v-for="follow in follows_lis" :key="follow.nickname" class="follow">
-              <a href="#" @click="other_user_page(follow.id)">
-                <img :src="follow.avatar" alt="">
-                <span>{{ follow.nickname }}</span>
+            <div v-for="follow in follows_lis" :key="follow.user.nickname" class="follow">
+              <a href="#" @click="other_user_page(follow.user.id)">
+                <img :src="follow.user.avatar" alt="">
+                <span>{{ follow.user.nickname }}</span>
               </a>
-              <el-button v-if="follow.isFavorite == 1" type="danger" round size="mini"
-                         @click="change_follow(userId, follow.id)">取消关注
+              <el-button v-if="follow.isFollow == 1" type="danger" round size="mini"
+                         @click="change_follow(userId, follow.user.id)">取消关注
               </el-button>
-              <el-button v-if="follow.isFavorite == 0" type="success" round size="mini"
-                         @click="change_follow(userId, follow.id)">关&nbsp;&nbsp;注
+              <el-button v-if="follow.isFollow == 0" type="success" round size="mini"
+                         @click="change_follow(userId, follow.user.id)">关&nbsp;&nbsp;注
               </el-button>
             </div>
           </div>
@@ -41,7 +41,7 @@ export default {
 
   methods: {
     other_user_page(otherId) {
-      if (this.userId == otherId) {
+      if (this.userId === otherId) {
         let route = this.$router.resolve({
           name: 'MyWeibo',
         })
@@ -58,10 +58,9 @@ export default {
     change_follow(userId, fansId) {
       this.$axios({
         method: 'post',
-        url: '/api/user/change_favorite',
+        url: '/api/user/change_follow',
         headers: {Authorization: this.$cookies.get('token')},
         data: {
-          userId: userId,  // 当前登录的用户
           followId: fansId  // 修改关注状态的用户
         }
       }).then(response => {
@@ -94,10 +93,9 @@ export default {
   created() {
     this.userId = this.$cookies.get('userId')
     // 向后端发请求，获取基于当前登录用户和查看用户两人关系的关注列表
-    this.$axios.get('/api/user/get_favorite', {
+    this.$axios.get('/api/user/get_follow', {
       params: {
-        userId: this.userId,
-        otherId: sessionStorage.getItem('otherId')
+        userId: sessionStorage.getItem('otherId')
       }
     }).then(response => {
       this.follows_lis = response.data.result

@@ -9,16 +9,16 @@
                     </div>
                     <el-divider></el-divider>
                     <div v-if="fans_lis" id="d1_2">
-                        <div v-for="fans in fans_lis" :key="fans.nickname" class="fans">
-                            <a href="" @click="other_user_page(fans.fansId)">
-                                <img :src="fans.avatar" alt="">
-                                <span>{{ fans.nickname }}</span>
+                        <div v-for="fans in fans_lis" :key="fans.user.nickname" class="fans">
+                            <a href="#" @click="other_user_page(fans.user.id)">
+                                <img :src="fans.user.avatar" alt="">
+                                <span>{{ fans.user.nickname }}</span>
                             </a>
-                            <el-button v-if="fans.isFavorite" type="danger" round size="mini"
-                                       @click="change_follow(userId, fans.fansId)">取消关注
+                            <el-button v-if="fans.isFollow" type="danger" round size="mini"
+                                       @click="change_follow(userId, fans.user.fansId)">取消关注
                             </el-button>
-                            <el-button v-if="!fans.isFavorite" type="success" round size="mini"
-                                       @click="change_follow(userId, fans.fansId)">关&nbsp;&nbsp;注
+                            <el-button v-if="!fans.isFollow" type="success" round size="mini"
+                                       @click="change_follow(userId, fans.user.fansId)">关&nbsp;&nbsp;注
                             </el-button>
                         </div>
                     </div>
@@ -62,10 +62,9 @@
                 } else {
                     this.$axios({
                         method: 'post',
-                        url: '/api/user/change_favorite',
+                        url: '/api/user/change_follow',
                         headers: {Authorization: this.$cookies.get('token')},
                         data: qs.stringify({
-                            userId: userId,  // 当前登录的用户
                             followId: fansId  // 修改关注状态的用户
                         })
                     }).then(response => {
@@ -102,6 +101,7 @@
                 {params: {userId: this.userId}}
             ).then(response => {
                 this.fans_lis = response.data.result;
+                console.log(this.fans_lis)
             }).catch(error => {
                 console.log(error);
             })
