@@ -25,7 +25,7 @@
                 </div>
                 <div class="tabs">
                     <el-tabs v-model="activeName" stretch>
-                        <el-tab-pane label="微博" name="first">
+                        <el-tab-pane label="日记" name="first">
                             <div class="weibo-content" v-if="this.all_weibo_lis">
                                 <div class="single-weibo" v-for="single_weibo in all_weibo_lis">
                                     <div class="single-weibo-up">

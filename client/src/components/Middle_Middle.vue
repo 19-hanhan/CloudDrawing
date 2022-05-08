@@ -475,7 +475,7 @@
                 this.isScroll = false  // 当前的滚动不能影响加载数据
                 if (!(this.count >= this.totalPages - 1)) {
                     this.count += 1;  // 页数 +1
-                    if (!searchKeyword) {
+                    if (!this.searchKeyword) {
                         this.getWeibo();  // 查询更多微博
                     } else {
                         this.searchDiary()

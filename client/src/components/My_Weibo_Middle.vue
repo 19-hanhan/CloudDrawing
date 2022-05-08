@@ -16,7 +16,7 @@
                 </div>
                 <div class="tabs">
                     <el-tabs v-model="activeName" stretch>
-                        <el-tab-pane label="我的微博" name="first">
+                        <el-tab-pane label="我的日记" name="first">
                             <div class="weibo-content" v-if="this.all_weibo_lis">
                                 <div class="single-weibo" v-for="single_weibo in all_weibo_lis">
                                     <div class="single-weibo-up">
@@ -1082,7 +1082,7 @@
                         center: true
                     })
                 } else {
-                    this.$confirm('确认删除这条微博吗？', {
+                    this.$confirm('确认删除这条日记吗？', {
                         confirmButtonText: '确定',
                         cancelButtonText: '取消',
                         type: 'warning',

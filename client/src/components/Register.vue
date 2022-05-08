@@ -8,7 +8,7 @@
         </div>
         <el-form>
           <el-input
-              placeholder="微博昵称：最多10个字符"
+              placeholder="用户昵称：最多10个字符"
               prefix-icon="el-icon-info"
               v-model="nickname"
               clearable>
