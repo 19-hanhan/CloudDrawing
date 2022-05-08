@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.jxnu.service.dao.CommentMapper">
+
+    <sql id="selectFields">
+        id
+        , diary_id, user_id, parent_id, content, comment_time, exist
+    </sql>
+
+    <sql id="insertFields">
+        diary_id
+        , user_id, parent_id, content, comment_time, exist
+    </sql>
+
+    <select id="selectCommentByDiaryId" resultType="Comment">
+        select
+        <include refid="selectFields"></include>
+        from comment
+        where exist = 1
+        and diary_id = #{diaryId}
+        order by comment_time desc
+    </select>
+
+    <update id="updateExist">
+        update comment
+        set exist = #{exist}
+        where id = #{id}
+    </update>
+
+    <insert id="insertComment" keyProperty="id">
+        insert into comment(<include refid="insertFields"></include>)
+        values(#{diaryId}, #{userId}, #{parentId}, #{content}, #{commentTime}, #{exist})
+    </insert>
+
+    <select id="selectCommentById" resultType="Comment">
+        select
+        <include refid="selectFields"></include>
+        from comment
+        where id = #{id}
+    </select>
+
+    <select id="selectCommentCountByDiaryId" resultType="int">
+        select count(id)
+        from comment
+        where exist = 1
+          and diary_id = #{diaryId}
+    </select>
+
+</mapper>

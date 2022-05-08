@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.jxnu.service.dao.NoticeMapper">
+
+    <sql id="selectFields">
+        id
+        , diary_id , action_content, sender_id, action_id, is_read, create_time, exist
+    </sql>
+
+    <sql id="insertFields">
+        diary_id
+        , action_content
+        , sender_id, action_id, is_read, create_time, exist
+    </sql>
+
+    <select id="selectNotices" resultType="Notice">
+        select
+        <include refid="selectFields"></include>
+        from notice
+        where action_id = #{actionId}
+        and exist = 1
+        order by create_time desc
+    </select>
+
+    <update id="updateIsRead">
+        update notice set is_read = #{isRead}
+        <if test="id!=0">
+            where id = #{id}
+        </if>
+        <if test="id==0">
+            where action_id = #{actionId}
+        </if>
+    </update>
+
+    <update id="updateExist">
+        update notice set exist = #{exist}
+        <if test="id!=0">
+            where id = #{id}
+        </if>
+        <if test="id==0">
+            where action_id = #{actionId}
+        </if>
+    </update>
+
+    <select id="selectNoticeById" resultType="Notice">
+        select
+        <include refid="selectFields"></include>
+        from notice
+        where id = #{id}
+    </select>
+
+    <insert id="insertNotice" keyProperty="id">
+        insert into notice(<include refid="insertFields"></include>)
+        values(#{diaryId}, #{actionContent}, #{senderId}, #{actionId}, #{isRead}, #{createTime}, #{exist})
+    </insert>
+
+    <select id="selectUnreadCountByActionId" resultType="int">
+        select count(*)
+        from notice
+        where exist = 1
+          and is_read = 0
+          and action_id = #{actionId}
+    </select>
+
+</mapper>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.jxnu.service.dao.UserMapper">
+
+    <sql id="insertFields">
+        nickname
+        , password, salt, email, avatar, exist, follow, fans
+    </sql>
+
+    <sql id="selectFields">
+        id
+        , nickname, password, salt, email, avatar, exist, follow, fans
+    </sql>
+
+    <select id="selectById" resultType="User">
+        select
+        <include refid="selectFields"></include>
+        from user
+        where id = #{id}
+    </select>
+
+    <select id="selectByEmail" resultType="User">
+        select
+        <include refid="selectFields"></include>
+        from user
+        where email = #{email}
+        and exist = 1
+    </select>
+
+    <update id="updateAvatar">
+        update user
+        set avatar = #{avatarUrl}
+        where id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        update user
+        set password = #{password}
+        where id = #{id}
+    </update>
+
+    <update id="updateNickname">
+        update user
+        set nickname = #{nickname}
+        where id = #{id}
+    </update>
+
+    <update id="updateExist">
+        update user
+        set exist = #{exist}
+        where id = #{id}
+    </update>
+
+    <insert id="insertUser" keyProperty="id">
+        insert user(<include refid="insertFields"></include>)
+        values( #{nickname}, #{password}, #{salt}, #{email}, #{avatar}, #{exist}, #{follow}, #{fans})
+    </insert>
+
+</mapper>
